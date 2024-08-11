@@ -1,0 +1,21 @@
+;; This an Artanis ENTRY file, don't remove it!
+
+ (use-modules (artanis artanis)
+              ;; Put modules you want to be imported here
+              ;; only for this file, not controllers/views
+	      ;;(artanis config)
+)
+ ;; Put whatever you want to be called before server initilization here
+ 
+;; (add-to-load-path "/home/mbc/projects/platewiz")
+;; (add-to-load-path "/home/mbc/syncd/tobedeleted/platewiz")
+;; (add-to-load-path "/home/admin/platewiz")
+ (add-to-load-path "abcdefgh/platewiz")
+ (add-to-load-path "abcdefgh")
+ 
+
+;;(conf-set! 'maxplates 100)
+
+ (init-server)
+
+ ;; Put whatever you want to be called before server running here
