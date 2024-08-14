@@ -1,0 +1,5 @@
+(use-modules (platewiz lib utilities))
+
+  (let* ((all-users (get-json-from-file "/home/mbc/projects/platewiz/pwdata/person.json")
+	  
+	)))

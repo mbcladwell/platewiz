@@ -6,32 +6,51 @@
   #:use-module  (artanis utils)
   #:use-module  (artanis artanis)
  #:use-module  (artanis config)
+ #:use-module  (artanis cookie)
    #:use-module (artanis irregex)
-  #:use-module (srfi srfi-1)
-  #:use-module (dbi dbi)
+   #:use-module (platewiz lib utilities)
+   #:use-module (srfi srfi-1)
+   #:use-module (ice-9 pretty-print)
+
+;;  #:use-module (dbi dbi)
   #:use-module (platewiz lib artass)
   )
   
 (define-artanis-controller project) ; DO NOT REMOVE THIS LINE!!!
 
 
-;(use-modules (artanis artanis)(artanis config)(artanis utils)(artanis mvc controller)(artanis irregex)(srfi srfi-1)(dbi dbi) (platewiz lib artass))
+
+;; (define (prep-project-rows a)
+;;   (fold (lambda (x prev)
+;;           (let (
+;;                 (project_sys_name (result-ref x "project_sys_name"))
+;;                 (project_name (result-ref x "project_name"))
+;; 		(descr (result-ref x "descr")))
+;;             (cons (string-append "<tr><td> <input type=\"radio\" id=\"" project_sys_name  "\" name=\"prjid\" value=\"" (number->string (cdr (car x)))   "\"></td>
+
+;; <td><a href=\"/plateset/getps?id=" (number->string (cdr (car x))) "\">" project_sys_name "</a></td>
+
+
+;; <td>" project_name "</td><td>" descr "</td></tr>")
+;; 		  prev)))
+;;         '() a))
 
 (define (prep-project-rows a)
   (fold (lambda (x prev)
           (let (
                 (project_sys_name (result-ref x "project_sys_name"))
                 (project_name (result-ref x "project_name"))
-		(descr (result-ref x "descr")))
-            (cons (string-append "<tr><td> <input type=\"radio\" id=\"" project_sys_name  "\" name=\"prjid\" value=\"" (number->string (cdr (car x)))   "\"></td>
+		(descr (result-ref x "descr"))
+		(id (number->string (assoc-ref x "id"))))
+            (cons (string-append "<tr><td> <input type=\"radio\" id=\"" project_sys_name  "\" name=\"prjid\" value=\""  id   "\"></td>
 
-<td><a href=\"/plateset/getps?id=" (number->string (cdr (car x))) "\">" project_sys_name "</a></td>
-
+<td><a href=\"/plateset/getps?id=" id "\">" project_sys_name "</a></td>
 
 <td>" project_name "</td><td>" descr "</td></tr>")
 		  prev)))
         '() a))
 
+                                  ;;  (number->string (cdr (car x))) 
 
 ;; <th><a href=\"/plateset/getps?id=" (number->string (cdr (car x))) "\" class=\"btn btn-primary btn-sm active\" role=\"button\" aria-pressed=\"true\">" project_sys_name "</a></th>
 ;; <th><a href=\"/plateset/getps?id=" (number->string (cdr (car x))) "\">" project_sys_name "</a></th>
@@ -55,18 +74,26 @@
 ;; 	 (view-render "/getall" (the-environment)))))
 
 (project-define getall
-		(options #:conn #t
+		(options
+		 ;;#:conn #f
 			 #:session #t
 			 #:cookies '(names prjid sid)
-			 #:with-auth "login" )
+			 ;;#:with-auth "login"
+			 )
 			 (lambda (rc ) 
 			   (let* ( 
 				  (help-topic "project")
 				   (sess-check (:session rc 'check))
 				  (sid (:cookies-value rc "sid"))
-				  (prjid (get-prjid rc sid))
-				  (holder   (DB-get-all-rows (:conn rc "select id, project_sys_name, project_name, descr from project" )))  
-				  (body (string-concatenate (prep-project-rows holder)))
+				  (_ (pretty-print sid))
+				  (prjid (:cookies-value rc "prjid"))
+				  ;;  (holder   (DB-get-all-rows (:conn rc "select id, project_sys_name, project_name, descr from project" )))
+				  (holder (get-json-from-file "/home/mbc/projects/platewiz/pwdata/projects.json"))
+				  (_ (pretty-print holder))
+				 (body (string-concatenate (prep-project-rows holder)))
+				  (_ (pretty-print body))
+				  ;;(prjidq (addquotes prjid))
+				  
 				  (prjidq (addquotes prjid))
 				  (sidq (addquotes sid))				  
 				  )
@@ -75,7 +102,7 @@
 
 
 (get "/project/add"
-     #:conn #t
+;;     #:conn #t
      #:cookies '(names prjid lnuser userid group sid)
      (lambda (rc)     
        (let* ((help-topic "project")
@@ -103,7 +130,7 @@
 
 
 (project-define addaction
-		(options #:conn #t
+		(options ;; #:conn #t
 			 #:cookies '(names prjid lnuser userid group sid))
 		(lambda (rc)
 		  (let* ((help-topic "project")
@@ -119,13 +146,13 @@
 		;;	 (groupq (addquotes group))
 			 (sidq (addquotes sid))
     			 (sql (string-append "select new_project('"  descr "', '" prj-name "', '" sid "')"))
-			 (dummy (:conn rc sql))
+			;; (dummy (:conn rc sql))
 			 )
 		    (redirect-to rc (get-redirect-uri "project/getall"))
   )))
 
 (project-define edit
-		(options #:conn #t
+		(options;; #:conn #t
 			 #:cookies '(names prjid lnuser userid group sid))
 		(lambda (rc)
 		  (let* ((help-topic "project")			
@@ -141,7 +168,7 @@
 		    (view-render "edit" (the-environment)))))
 
 (project-define editaction
-		(options #:conn #t
+		(options;; #:conn #t
 			 #:cookies '(names prjid lnuser userid group sid))
 		(lambda (rc)
 		  (let* ((help-topic "project")
@@ -152,7 +179,7 @@
 			 (prjidq (addquotes prjid))
 			 (sidq (addquotes sid))	  
 			 (sql (string-append "UPDATE project SET project_name='" prj-name "', descr='" descr "' WHERE id=" prjid))
-			 (dummy (:conn rc sql))
+			;; (dummy (:conn rc sql))
 			 )
 ;;		    (view-render "test" (the-environment))
 		    (redirect-to rc (get-redirect-uri "project/getall"))
@@ -191,8 +218,9 @@
 ;; 	  ))
 
 
-(post "/test"
-     #:cookies '(names prjid userid username group sid)
+(project-define test
+(options		
+     #:cookies '(names prjid userid username group sid))
      (lambda (rc)     
        (let* ((help-topic "project")
 	      (result (:cookies-value rc "sid"))

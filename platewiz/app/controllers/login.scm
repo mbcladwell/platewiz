@@ -9,8 +9,9 @@
   #:use-module ((rnrs) #:select (define-record-type))
   #:use-module (artanis irregex)
   #:use-module (srfi srfi-1)
-  #:use-module (dbi dbi)
+;;  #:use-module (dbi dbi)
   #:use-module (platewiz lib artass)
+  #:use-module (platewiz lib utilities)
   #:use-module (rnrs bytevectors)
   #:use-module (ice-9 textual-ports)
   #:use-module (ice-9 rdelim)
@@ -23,7 +24,7 @@
 
 (get "/login?"
       #:cookies '(names prjid sid )
-      ;;#:from-post 'qstr
+      #:from-post 'qstr
   (lambda (rc)
     (let* (
 	  ;; (login-failed (if (:from-post rc 'get-vals "login_failed") (:from-post rc 'get-vals "login_failed") ""))
@@ -36,7 +37,7 @@
 	  ;; (dummy (:cookies-setattr! rc 'prjid #:path "/"))
 	   ;;(dummy (:cookies-update! rc))
 	   (dest (params rc "destination"))
-	    (name (get-from-qstr rc "name"))
+	   (name (get-from-qstr rc "user"))
 	  ;; (name "zod")
 	   (dummy (DEBUG  "###################################################################The value of name (in login) is: ~a~%" name))
 	   (dummy (DEBUG  "###################################################################The value of name (in login) is: ~a~%" name))
@@ -52,11 +53,19 @@
   )))
 
 
+
+(define (check-pass rc user passwd)
+  (let* ((all-users (get-json-from-file "/home/mbc/projects/platewiz/pwdata/person.json"))
+	 (user (find-by-key all-users "user" user)))
+        (string=? (assoc-ref (car user) "passwd") passwd)))
+
+
+
 ;; /auth is the post action on the login form; urbit users never see this
 (post "/auth"
-      #:auth `(table person "lnuser" "passwd" "salt" ,my-hmac)
+      #:auth `(basic ,check-pass)
       #:session #t
-      #:conn #t
+  ;;    #:conn #t
       #:cookies '(names prjid sid )
       #:from-post 'qstr
       (lambda (rc)	
@@ -69,25 +78,41 @@
 	     ;; requested url, sid, userid must be available at top level
 	     (let* ((sid (:auth rc))		    
 		    (userid (if sid (let* (
-					   (sql "select id, lnuser, usergroup from person")
-					   (ret  (DB-get-all-rows (:conn rc sql)))  ;;this is in artanis/artanis/db.scm
-					   (lnuser (:from-post rc 'get-vals "lnuser"))
+					   (user (:from-post rc 'get-vals "user"))
+					   (name (get-from-qstr rc "user"))
+	  ;
 					  ;; (name (:from-post rc 'get-vals "name"))
-					  ;; (dummy  (DEBUG  (string-append "Value of name: " name "~%")))				
+					   (dummy  (DEBUG  (string-append "Value of name: " name "~%")))				
 					  ;; (lnuser (if name name (:from-post rc 'get-vals "lnuser")))
-					   (userid (get-id-for-name lnuser ret))
-					   (sql2 (string-append "INSERT INTO sess_person ( sid, person_id, prjid) VALUES ('" sid "', " userid ", 1)"))
-					   (dummy (:conn rc sql2))
+					   (userid (get-id-for-name user))
 					   )
 				      userid)
 				#f))
 		    (requested-url (if sid (let* (
 						  (dest   (uri-decode (:from-post rc 'get-vals "destination")))				  	      
+					   (dummy  (DEBUG  (string-append "Value of name2: " name "~%")))				
 						  )
 					     (if dest dest "/project/getall"))
 				       "login?login_failed=Login_Failed!"))
 		    )
 	       (redirect-to rc (get-redirect-uri requested-url))))))
+	     ;;  (view-render requested-url (the-environment))))))
+
+
+(get "/login/prime"
+     ;; #:auth `(basic ,check-pass)
+      #:session #t
+  ;;    #:conn #t
+      #:cookies '(names prjid sid )
+     ;; #:from-post 'qstr
+      (lambda (rc)
+	(let* ((_ (:session rc 'spawn))
+	       (_ (:cookies-set! rc 'prjid "prjid" 1))
+
+	       )
+	  
+	  (redirect-to rc (get-redirect-uri "/project/getall")))))
+	  
 	     ;;  (view-render requested-url (the-environment))))))
 
 

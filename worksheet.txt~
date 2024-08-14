@@ -1,0 +1,22 @@
+;; This buffer is for text that is not saved, and for Lisp evaluation.
+;; To create a file, visit it with C-x C-f and enter text in its buffer.
+
+ guix shell --no-grafts \
+guile guile-g-golf gtk@4
+
+
+plate
+id | barcode | plate_sys_name | plate_type_id | plate_format_id | plate_layout_name_id
+
+
+well
+id  | by_col | plate_id
+
+sample
+id  | sample_sys_name | project_id | accs_id
+
+well_sample
+well_id | sample_id 
+
+
+select plate.id, barcode, plate_sys_name, plate_type_id, plate_format_id, plate_layout_name_id, well.id, by_col, plate_id, sample.id sample_sys_name, project_id, accs_id FROM well_sample, plate, well, sample WHERE plate.id=well.plate_id and well.id=well_sample.well_id and sample_id=well_sample.sample_id;

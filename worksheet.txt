@@ -1,0 +1,33 @@
+
+
+plate
+id | barcode | plate_sys_name | plate_type_id | plate_format_id | plate_layout_name_id
+
+
+well
+id  | by_col | plate_id
+
+sample
+id  | sample_sys_name | project_id | accs_id
+
+well_sample
+well_id | sample_id 
+
+
+SELECT plate.id, barcode, plate_sys_name, plate_type_id, plate_format_id, plate_layout_name_id, well.id, by_col, plate_id, sample.id sample_sys_name, project_id, accs_id
+FROM well_sample, plate, well, sample
+WHERE plate.id=well.plate_id and well.id=well_sample.well_id and sample.id=well_sample.sample_id;
+
+SELECT plate_id, well.id AS well_id, by_col, sample.id AS sample_id, sample_sys_name, accs_id
+FROM well_sample, well, sample
+WHERE well.id=well_sample.well_id and sample.id=well_sample.sample_id;
+
+SELECT plate_id, well.id AS well_id, by_col, sample.id AS sample_id, sample_sys_name, accs_id INTO TABLE plate_well_sample
+FROM well_sample, well, sample
+WHERE well.id=well_sample.well_id and sample.id=well_sample.sample_id;
+
+select jsonb_agg(plate_well_sample) from plate_well_sample;
+
+
+
+

@@ -1,0 +1,1 @@
+[{"id": 1, "salt": "a39b69e5fd79854b", "email": "info@labsolns.com", "user": "pw_admin", "passwd": "welcome", "usergroup": "admin"}, {"id": 2, "salt": "e999f4c34635f943", "email": "", "user": "pw_user", "passwd": "welcome", "usergroup": "user"}, {"id": 3, "salt": "55ecb01c50cb1ae1", "email": "", "user": "demo", "passwd": "welcome", "usergroup": "user"}]

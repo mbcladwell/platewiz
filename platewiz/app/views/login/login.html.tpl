@@ -13,7 +13,7 @@
   <form action="/auth" method="post" >
     
     <div class="form-row">
-      <label for="lnuser">Username:</label><input type="text" class="form-control"  id="lnuser" name="lnuser">
+      <label for="user">Username:</label><input type="text" class="form-control"  id="user" name="user">
     </div>
     <div class="form-row">
       <label for="passwd">Password:</label><input type="password" class="form-control"  id="passwd" name="passwd">

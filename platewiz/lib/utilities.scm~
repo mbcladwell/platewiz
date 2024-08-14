@@ -256,16 +256,10 @@
 	 (dummy  (:conn rc sql)))  
    #f))
 
-;; (define (get-id-for-name name rows)
-;;   (if (and  (null? (cdr rows))  (string=?  (cdadar rows) name))
-;;       (number->string (cdaar rows))
-;;       (if (string=?  (cdadar rows) name)
-;; 	   (number->string (cdaar rows))
-;; 	   (get-id-for-name name (cdr rows)))))
-
-(define (get-id-for-name name)
-  (let* ((all-users (get-json-from-file "/home/mbc/projects/platewiz/pwdata/person.json"))
-	 (user (find-by-key all-users "user" name)))
-    (assoc-ref (car user) "id")))
-
+(define (get-id-for-name name rows)
+  (if (and  (null? (cdr rows))  (string=?  (cdadar rows) name))
+      (number->string (cdaar rows))
+      (if (string=?  (cdadar rows) name)
+	   (number->string (cdaar rows))
+	   (get-id-for-name name (cdr rows)))))
 
