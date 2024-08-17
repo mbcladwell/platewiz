@@ -40,7 +40,7 @@
 
 (defun load-and-run-fave-file()
   (interactive)
-   (find-file "~/projects/platewiz/test/login-test.scm")
+   (find-file "~/projects/platewiz/test/plateset-test.scm")
  ;; (find-file "~/projects/bookmunger/bookmunger.scm")
   (sesman-start)
   )

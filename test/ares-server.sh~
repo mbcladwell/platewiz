@@ -1,3 +1,0 @@
-#! /bin/bash
-guix shell guile-next guile-ares-rs artanis -- guile -L . -c '((@ (ares server) run-nrepl-server))'
-

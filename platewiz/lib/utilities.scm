@@ -11,10 +11,21 @@
   #:use-module (ice-9 rdelim)
   #:use-module (rnrs bytevectors)
   #:use-module (web uri)
-  #:export (get-json-from-file
+  #:export (datadir
+	    get-json-from-file
 	    find-by-key
 	    find-by-key-int
+	    get-psids-for-prjid
+	    get-reps-for-pln-id
+	    get-ps-for-prj-id
+	    get-pln-for-plnid
+	    get-plate-type-for-psid
+	    get-plate-lyt-name-for-psid
+	    get-arids-for-psid
+	    get-arids-for-prjid
 	    ))
+
+(define datadir "/home/mbc/projects/platewiz/pwdata")
 
 
 (define nonce-chars (list->vector (string->list "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789")))
@@ -53,7 +64,7 @@
       (if (= (assoc-ref (car lst) key) keyval) (car lst) #f)
       (if (= (assoc-ref (car lst) key) keyval)
 	   (car lst)
-	  (find-by-key (cdr lst) key keyval))))
+	  (find-by-key-int (cdr lst) key keyval))))
 
 
 (define (move-file-deposit->storage old new)
@@ -236,4 +247,88 @@
 	 (delete-file in-file)))
 
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;pwiz json utilities
 
+(define (recurse-get-ps-ids-for-prj-id platesets prjid ps-ids)
+  (if (null? (cdr platesets))
+      (begin
+	(if  (= (assoc-ref (car platesets) "project_id") prjid)
+	     (set! ps-ids (cons (assoc-ref (car platesets) "id") ps-ids )))
+	  ps-ids)
+      (begin
+	(if  (= (assoc-ref (car platesets) "project_id")  prjid)
+	     (set! ps-ids (cons (assoc-ref (car platesets) "id") ps-ids)))
+	(recurse-get-ps-ids-for-prj-id (cdr platesets) prjid ps-ids))))
+
+(define (get-psids-for-prjid prjid)
+  ;;get all ps-ids that belong to a project
+  (let* ((all-ps (get-json-from-file (string-append datadir "/plate_set.json"))))
+	 (recurse-get-ps-ids-for-prj-id all-ps prjid '())	
+    ))
+
+(define (get-reps-for-pln-id id)
+  ;;pln plate_layout_name
+(let* ((pln (get-json-from-file (string-append datadir "/plate_layout_name.json")))
+       (plate-layout (find-by-key-int pln "id" id)))
+  (assoc-ref plate-layout "replicates")))
+
+;;       ##############
+
+(define (recurse-get-ps-for-prj-id platesets prjid ps)
+  (if (null? (cdr platesets))
+      (begin
+	(if  (= (assoc-ref (car platesets) "project_id") prjid)
+	     (set! ps (cons  (car platesets)  ps )))
+	  ps)
+      (begin
+;;	(pretty-print  (= (assoc-ref (car platesets) "project_id")  prjid))
+	(if  (= (assoc-ref (car platesets) "project_id")  prjid)
+	     (set! ps (cons  (car platesets) ps)))
+	(recurse-get-ps-for-prj-id (cdr platesets) prjid ps))))
+
+(define (get-ps-for-prj-id prjid)
+  ;;get all ps-ids that belong to a project
+  (let* ((all-ps (get-json-from-file (string-append datadir "/plate_set.json"))))
+	 (recurse-get-ps-for-prj-id all-ps prjid '())))
+
+;;       ##############
+
+(define (get-pln-for-plnid id)
+;;pln plate_layout_name
+  (let* ((pln (get-json-from-file "/home/mbc/projects/platewiz/pwdata/plate_layout_name.json"))
+	 (entity (find-by-key-int pln "id" id)))
+    (assoc-ref entity "sys_name")))
+
+(define (get-plate-type-for-psid psid)
+;; returns '(3 "assay"), plate_type_id and plate_type_name
+  (let* ((pls (get-json-from-file (string-append datadir "/plate_set.json")))
+	 (entity (find-by-key-int pls "id" psid))
+	 (ptid (assoc-ref entity "plate_type_id"))
+	 (pt (get-json-from-file (string-append datadir "/plate_type.json")))
+	 (entity2 (find-by-key-int pt "id" ptid)))
+    `(,ptid ,(assoc-ref entity2 "plate_type_name"))))
+
+(define (get-plate-lyt-name-for-psid psid)
+  ;; returns '(3 "LYT-3" "all blanks"), plate_layout_name_id, plate_layout_name, name
+  ;; (cadr ) ro get plate_layout_name
+  (let* ((pls (get-json-from-file (string-append datadir "/plate_set.json")))
+	 (entity (find-by-key-int pls "id" psid))
+	 (plnid (assoc-ref entity "plate_layout_name_id"))
+	 (pln (get-json-from-file (string-append datadir "/plate_layout_name.json")))
+	 (entity2 (find-by-key-int pln "id" plnid)))
+    `(,plnid ,(assoc-ref entity2 "sys_name") ,(assoc-ref entity2 "name"))))
+
+(define (get-arids-for-psid psid)
+  ;; get all assay_run_ids for a plate_set_id
+  (let* ((all-ars (get-json-from-file (string-append datadir "/assay_run.json"))))
+    (fold (lambda(elem arids)
+	    (if (= (assoc-ref elem "plate_set_id") psid)
+		(cons (assoc-ref elem "id") arids)
+		arids))     
+	  '()
+	  all-ars)))
+
+(define (get-arids-for-prjid prjid)
+  (let* ((psids-for-prjid (get-ps-ids-for-prj-id prjid)))
+    (concatenate (map get-arids-for-psid psids-for-prjid))))

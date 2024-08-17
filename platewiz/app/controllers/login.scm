@@ -108,6 +108,8 @@
       (lambda (rc)
 	(let* ((_ (:session rc 'spawn))
 	       (_ (:cookies-set! rc 'prjid "prjid" 1))
+	       (_ (:cookies-setattr! rc 'prjid #:path "/"))
+	       
 
 	       )
 	  

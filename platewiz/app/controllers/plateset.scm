@@ -13,7 +13,9 @@
 #:use-module (web uri)
 #:use-module (srfi srfi-19)   ;; date time
 #:use-module (platewiz lib artass)
+#:use-module (platewiz lib utilities)
 #:use-module (ice-9 match)
+#:use-module (ice-9 pretty-print)
 #:use-module (srfi srfi-11) ;; let-values
 #:use-module (ice-9 textual-ports)
 #:use-module (ice-9 rdelim)	     	     
@@ -21,13 +23,6 @@
 
 (define-artanis-controller plateset) ; DO NOT REMOVE THIS LINE!!!
 
-;(use-modules (artanis utils)(artanis mvc controller)(artanis irregex)(artanis cookie)
-;	     (srfi srfi-1)(dbi dbi)(web uri)
-;	     (srfi srfi-19)   ;; date time
-;	     (platewiz lib artass)(ice-9 match)
-;	     (srfi srfi-11) ;; let-values
-;	     (ice-9 textual-ports)(ice-9 rdelim)
-;	     	     (platewiz lib artass))
 
 (define (prep-ps-for-prj-rows a)
   (fold (lambda (x prev)
@@ -35,22 +30,30 @@
                 (plate_set_sys_name (result-ref x "plate_set_sys_name"))
                 (plate_set_name (result-ref x "plate_set_name"))
 		(descr (result-ref x "descr"))
-		(type (result-ref x "plate_type_name"))
-		(numplates (get-c6 x))
-		(format  (result-ref x "format"))
-		(layout (result-ref x "sys_name"))
-		(layoutid (get-c9 x))
-		(reps (get-c10 x))
-		(worklist (if (equal? (get-c11 x) "0") "" (get-c11 x)))
-		(worklist-for-data (if (equal? (get-c11 x) "0") "0" (get-c11 x)))
-		(idval (string-append (number->string (cdr (car x))) "+" numplates "+" format "+" layoutid "+" reps "+" worklist-for-data))
+		(numplates  (number->string (assoc-ref x "num_plates")))
+		(format  (number->string (assoc-ref x "plate_format_id")))
+		(layoutid  (assoc-ref x "plate_layout_name_id"))
+		(reps (number->string (get-reps-for-pln-id layoutid)))
+		(psid   (assoc-ref x "id"))
+		(type (cadr (get-plate-type-for-psid psid)))
+		(layout  (cadr (get-plate-lyt-name-for-psid psid)))
+		(worklist "testing")
+		(worklist-for-data "testing")
+		(idval (string-append (number->string (cdr (car x))) "+" numplates "+" format "+" (number->string layoutid) "+" reps "+" worklist-for-data))
 		)
-            (cons (string-append "<tr><td> <input type=\"checkbox\" id=\"" plate_set_sys_name  "\" name=\"plateset-id\" value=\"" idval "\" onclick=\"handleChkbxClick()\"></td><td><a href=\"/plate/getpltforps?id=" (number->string (cdr (car x))) "\">" plate_set_sys_name "</a></td><td>" plate_set_name "</td><td>" descr "</td><td>" type "</td><td>" numplates "</td><td>" format "</td><td><a href=\"/layout/lytbyid?id="  layoutid "\">" layout "</a></td><td>" reps "</td><td>" worklist "</td></tr>")
-		  prev)))
+	    (begin
+              (cons (string-append "<tr><td> <input type=\"checkbox\" id=\"" plate_set_sys_name
+				   "\" name=\"plateset-id\" value=\"" (number->string  psid)
+				   "\" onclick=\"handleChkbxClick()\"></td><td><a href=\"/plate/getpltforps?id=" (number->string psid)
+				   "\">" plate_set_sys_name  "</a></td><td>" plate_set_name
+				   "</td><td>" descr  "</td><td>" type "</td><td>" numplates "</td><td>" format
+				   "</td><td><a href=\"/layout/lytbyid?id="  (number->string layoutid)
+				   "\">" layout "</a></td><td>" reps  "</td><td>" worklist  "</td></tr>")
+		    prev)
+	    )))
         '() a))
 
-
-
+                                                         
 
 (define (get-assay-runs-for-prjid id rc)
   (let* ((sql (string-append "select assay_run.id, assay_run.assay_run_sys_name, assay_run.assay_run_name, assay_run.descr, assay_type.assay_type_name, plate_layout_name.sys_name, plate_layout_name.name FROM assay_run, assay_type, plate_set, plate_layout_name WHERE assay_run.plate_layout_name_id=plate_layout_name.id AND assay_run.assay_type_id=assay_type.id AND assay_run.plate_set_id=plate_set.id AND plate_set.project_id =" id ))
@@ -88,10 +91,10 @@
 ;; (get-hit-lists-for-prjid "1")
 
 (get "/plateset/getps"
-     #:conn #t
+;;     #:conn #t
      #:session #t
 ;;     #:with-auth "login"
-     #:cookies '(names sid)			  
+     #:cookies '(names sid prjid)			  
 		 (lambda (rc)
 		   (let* (			 
 			  (help-topic "plateset")
@@ -101,17 +104,24 @@
 			 ;; (dummy (:cookies-set! rc 'prjid "prjid" prjid))
 			 ;; (dummy (:cookies-setattr! rc 'prjid #:path "/"))
 			  (sid (:cookies-value rc "sid"))
-			  (dummy (update-prjid rc sid prjid))
-		;;	  (sql (string-append "select plate_set.id, plate_set_sys_name, plate_set_name, plate_set.descr, plate_type_name, num_plates, plate_set.plate_format_id, plate_layout_name_id, plate_layout_name.replicates from plate_set, plate_type, plate_layout_name where plate_set.plate_type_id=plate_type.id AND plate_set.plate_layout_name_id=plate_layout_name.id AND plate_set.project_id =" prjid ))
 
-(sql (string-append "SELECT plate_set.id, plate_set.plate_set_sys_name, plate_set_name, plate_set.descr,  plate_type.plate_type_name, num_plates, format,  plate_layout_name.sys_name,  plate_layout_name.id, plate_layout_name.replicates, rearray_pairs.ID FROM  plate_format, plate_type, plate_layout_name, plate_set FULL outer JOIN rearray_pairs ON plate_set.id= rearray_pairs.dest WHERE plate_format.id = plate_set.plate_format_id AND plate_set.plate_layout_name_id = plate_layout_name.id  AND plate_set.plate_type_id = plate_type.id  AND project_id =" prjid " ORDER BY plate_set.id"))
+			  ;;(dummy (update-prjid rc sid prjid))
+
+			  ;;	  (sql (string-append "select plate_set.id, plate_set_sys_name, plate_set_name, plate_set.descr, plate_type_name, num_plates, plate_set.plate_format_id, plate_layout_name_id, plate_layout_name.replicates from plate_set, plate_type, plate_layout_name where plate_set.plate_type_id=plate_type.id AND plate_set.plate_layout_name_id=plate_layout_name.id AND plate_set.project_id =" prjid ))
+
+			  (sql (string-append "SELECT plate_set.id, plate_set.plate_set_sys_name, plate_set_name, plate_set.descr,  plate_type.plate_type_name, num_plates, format,  plate_layout_name.sys_name,  plate_layout_name.id, plate_layout_name.replicates, rearray_pairs.ID FROM  plate_format, plate_type, plate_layout_name, plate_set FULL outer JOIN rearray_pairs ON plate_set.id= rearray_pairs.dest WHERE plate_format.id = plate_set.plate_format_id AND plate_set.plate_layout_name_id = plate_layout_name.id  AND plate_set.plate_type_id = plate_type.id  AND project_id =" prjid " ORDER BY plate_set.id"))
 			  
-			  (holder (DB-get-all-rows (:conn rc sql)))
-			  (body  (string-concatenate  (prep-ps-for-prj-rows holder)) )
-			  (assay-runs (get-assay-runs-for-prjid prjid rc))
-			  (hit-lists (get-hit-lists-for-prjid prjid rc))
+;;(holder (DB-get-all-rows (:conn rc sql)))
+			  (holder (get-json-from-file (string-append datadir "/plate_set.json")))
+			  (eoi (get-ps-for-prj-id (string->number prjid)))
+			  (_ (pretty-print eoi))
+			  (body  (string-concatenate  (prep-ps-for-prj-rows eoi)) )
+			  (assay-runs "testing")
+	;; (assay-runs (get-assay-runs-for-prjid prjid rc))
+			  (hit-lists "testing")
+			 ;; (hit-lists (get-hit-lists-for-prjid prjid rc))
 			  (prjidq (addquotes prjid))
-			  )      
+			  )
 		     (view-render "getps" (the-environment))
 		     )))
 

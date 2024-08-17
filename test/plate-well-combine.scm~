@@ -1,0 +1,7 @@
+(use-modules (platewiz lib utilities)
+	     (ice-9 pretty-print)
+	     (srfi srfi-1)  ;;delete-duplicates
+	     )
+
+(define datadir "/home/mbc/projects/platewiz/pwdata")
+

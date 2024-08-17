@@ -1,2 +1,0 @@
-#! /bin/bash
-guix shell emacs emacs-arei -- emacs -q -load ~/temp/test/ares-init.el
