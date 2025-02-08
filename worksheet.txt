@@ -1,3 +1,14 @@
+sudo -u postgres createuser --superuser mbc
+sudo -u postgres psql
+\password mbc
+sudo psql -U mbc -h 127.0.0.1 postgres -a -f /home/mbc/projects/limsn/limsn/postgres/initdba.sql
+
+psql -U ln_admin -h 127.0.0.1 postgres -a -f /home/mbc/projects/limsn/limsn/postgres/initdbb.sql
+ psql -U ln_admin -h 127.0.0.1 -d lndb -a -f /home/mbc/projects/limsn/limsn/postgres/initdbc.sql
+ psql -U ln_admin -h 127.0.0.1 -d lndb -a -f /home/mbc/projects/limsn/limsn/postgres/create-db.sql
+ psql -U ln_admin -h 127.0.0.1 -d lndb -a -f /home/mbc/projects/limsn/limsn/postgres/example-data.sql
+
+psql -U ln_admin -h 127.0.0.1 -d lndb
 
 
 plate

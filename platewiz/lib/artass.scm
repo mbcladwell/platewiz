@@ -151,6 +151,21 @@
 	 (set! out (cons (string-append "<option value=\"" (number->string (cdaar in)) "\">"  (cdadar in) "</option>") out))
 	 (dropdown-contents-with-id (cdr in) out)) ))
 
+;; (define (prep-ar-rows a)
+;;   (fold (lambda (x prev)
+;;           (let* (
+;;                 (assay-run-sys-name (result-ref x "assay_run_sys_name"))
+;; 		(assay-run-name (result-ref x "assay_run_name"))
+;; 		(descr (result-ref x "descr"))
+;; 		(assay-type-name (result-ref x "assay_type_name"))
+;; 		(sys-name (result-ref x "sys_name"))
+;; 		(lytid (substring sys-name 4))
+;; 		(name (result-ref x "name"))
+;; 		)
+;;             (cons (string-append "<tr><td><a href=\"/assayrun/getarid?arid=" (number->string (cdr (car x))) "\">" assay-run-sys-name "</a></td><td>" assay-run-name "</td><td>" descr "</td><td>" assay-type-name "</td><td><a href=\"/layout/lytbyid?id=" lytid  "\">" sys-name "</a></td><td>" name "</td></tr>")
+;; 		  prev)))
+;;         '() a))
+
 (define (prep-ar-rows a)
   (fold (lambda (x prev)
           (let* (
@@ -165,6 +180,8 @@
             (cons (string-append "<tr><td><a href=\"/assayrun/getarid?arid=" (number->string (cdr (car x))) "\">" assay-run-sys-name "</a></td><td>" assay-run-name "</td><td>" descr "</td><td>" assay-type-name "</td><td><a href=\"/layout/lytbyid?id=" lytid  "\">" sys-name "</a></td><td>" name "</td></tr>")
 		  prev)))
         '() a))
+
+
 
 
 (define (dropdown-contents-no-id in out)

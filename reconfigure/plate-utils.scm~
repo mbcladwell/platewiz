@@ -1,0 +1,60 @@
+(define-module (plate-utils)
+  #:use-module (ice-9 regex) ;;list-matches
+  #:use-module (ice-9 textual-ports)
+  #:use-module (ice-9 pretty-print)
+;;  #:use-module (srfi srfi-19)   ;; date time
+  #:use-module (json)
+  #:use-module (ice-9 string-fun) ;;string-replace-substring
+  #:export (main
+ 	    ))
+
+(define (save-lst-as-json lst file)
+  (let* (
+	 (stow (scm->json-string  (list->vector lst) ))
+	 (p  (open-output-file file))
+	 (_ (put-string p stow))	
+	 )
+    (force-output p))
+  )
+
+
+(define* (make-plate plate-id plate-type well-start-id format #:optional sample-start-id)
+  ;;format and layout defined at plate_set level
+  ;;format needed here for well counting
+  (let* ((id-counter well-start-id)
+	 (well-counter 1)
+	;; (sample-counter #f)
+	 (all-wells '())
+	 (_ (while (<= well-counter format)
+	      (begin		
+		(if sample-start-id
+		    (let*(
+			  (sample-counter sample-start-id))
+		      (set! all-wells (cons `(("id" . ,id-counter)("by_col" . ,well-counter)("sample_id" . ,sample-counter)("sample_sys_name" . ,(string-append "SPL-" (number->string sample-counter)))("accs_id" . "")("updated" . ,(current-time))) all-wells))
+		      (set! sample-counter (+ sample-counter 1)))			    
+		      (set! all-wells (cons `(("id" . ,id-counter)("by_col" . ,well-counter)) all-wells))
+		     )
+		      
+		(set! well-counter (+ well-counter 1))
+		(set! id-counter (+ id-counter 1)))
+	      
+	      ))
+	 (all-wells (list->vector all-wells))
+	 (plate-sys-name (string-append "PLT-" (number->string plate-id)))
+	 )
+    `(("id" . ,plate-id)
+      ("barcode" . "")
+      ("plate_sys_name" . ,plate-sys-name)      
+      ("plate_type" . ,plate-type)      
+      ("wells" . ,all-wells))
+  ))
+
+
+;;guix shell --manifest=manifest.scm -- guile -e '(plate-utils)' -s plate-utils.scm 
+
+(define (main args)
+  (save-lst-as-json `(,(make-plate 33 "assay" 1234 96 100)) "myplate.json")
+;;  (pretty-print (make-plate 33 "assay" 1234 96))
+)
+
+
